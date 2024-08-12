@@ -56,8 +56,8 @@ prepare_namespace:
         echo "Secret 'yandex-registry' already exist. Skipping step."
       else
         kubectl create secret docker-registry yandex-registry -n "${NAMESPACE}" \
-          --docker-server="${REGISTRY}/${REGISTRY_ID}" \
-          --docker-username="${REGISTRY_USER}" \
-          --docker-password="${REGISTRY_PASSWORD}"
-        echo "Secret 'yandex-registry' created."
+          --docker-server="${CI_REGISTRY}/${CI_REGISTRY_ID}" \
+          --docker-username="${CI_REGISTRY_USER}" \
+          --docker-password="${CI_REGISTRY_PASSWORD}"
+        echo "Registry has been installed."
       fi
