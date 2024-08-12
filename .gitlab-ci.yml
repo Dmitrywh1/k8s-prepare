@@ -1,0 +1,63 @@
+stages:
+  - install monitoring
+  - install ingress
+  - prepare namespace
+
+image:
+  name: bitnami/kubectl
+  entrypoint: [""]
+
+variables:
+  NAMESPACE: dev
+
+.prepare_kubectl:
+  before_script:
+    - export KUBECONFIG=$KUBECONFIG
+  tags:
+    - docker
+
+install_monitoring:
+  stage: install monitoring
+  image:
+    name: alpine/helm
+    entrypoint: [""]
+  before_script:
+    - export KUBECONFIG=$KUBECONFIG
+  script:
+    - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+    - helm repo update
+    - |
+      if helm ls --namespace monitoring | grep -q kube-prometheus-stack; then
+        echo "Release 'kube-prometheus-stack' already exists. Skipping installation."
+      else
+        helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack --namespace monitoring --create-namespace
+      fi
+  tags:
+    - docker
+
+install_grafana_ingress:
+  stage: install ingress
+  extends: .prepare_kubectl
+  script:
+    - kubectl apply -f manifests/
+
+prepare_namespace:
+  stage: prepare namespace
+  extends: .prepare_kubectl
+  script:
+    - |
+      if ! kubectl get ns "${NAMESPACE}" > /dev/null 2>&1; then
+          kubectl create ns "${NAMESPACE}"
+        else
+          echo "Namespace ${NAMESPACE} already exists, skipping creation."
+        fi
+    - |
+      if kubectl get secret yandex-registry -n "${NAMESPACE}" >/dev/null 2>&1; then
+        echo "Secret 'yandex-registry' already exist. Skipping step."
+      else
+        kubectl create secret docker-registry yandex-registry -n "${NAMESPACE}" \
+          --docker-server="${REGISTRY}/${REGISTRY_ID}" \
+          --docker-username="${REGISTRY_USER}" \
+          --docker-password="${REGISTRY_PASSWORD}"
+        echo "Secret 'yandex-registry' created."
+      fi
