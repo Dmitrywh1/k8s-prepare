@@ -8,7 +8,8 @@ image:
   entrypoint: [""]
 
 variables:
-  NAMESPACE: dev
+  NAMESPACE_development: dev
+  NAMESPACE_production: prod
 
 .prepare_kubectl:
   before_script:
@@ -41,23 +42,44 @@ install_grafana_ingress:
   script:
     - kubectl apply -f manifests/
 
-prepare_namespace:
+prepare_namespace:dev:
   stage: prepare namespace
   extends: .prepare_kubectl
   script:
     - |
-      if ! kubectl get ns "${NAMESPACE}" > /dev/null 2>&1; then
-          kubectl create ns "${NAMESPACE}"
+      if ! kubectl get ns "${NAMESPACE_development}" > /dev/null 2>&1; then
+          kubectl create ns "${NAMESPACE_development}"
         else
-          echo "Namespace ${NAMESPACE} already exists, skipping creation."
+          echo "Namespace ${NAMESPACE_development} already exists, skipping creation."
         fi
     - |
-      if kubectl get secret yandex-registry -n "${NAMESPACE}" >/dev/null 2>&1; then
+      if kubectl get secret yandex-registry -n "${NAMESPACE_development}" >/dev/null 2>&1; then
         echo "Secret 'yandex-registry' already exist. Skipping step."
       else
-        kubectl create secret docker-registry yandex-registry -n "${NAMESPACE}" \
+        kubectl create secret docker-registry yandex-registry -n "${NAMESPACE_development}" \
           --docker-server="${CI_REGISTRY}/${CI_REGISTRY_ID}" \
           --docker-username="${CI_REGISTRY_USER}" \
           --docker-password="${CI_REGISTRY_PASSWORD}"
         echo "Registry has been installed."
       fi
+
+prepare_namespace:prod:
+  stage: prepare namespace
+  extends: .prepare_kubectl
+  script:
+    - |
+      if ! kubectl get ns "${NAMESPACE_production}" > /dev/null 2>&1; then
+          kubectl create ns "${NAMESPACE_production}"
+        else
+          echo "Namespace ${NAMESPACE_production} already exists, skipping creation."
+        fi
+    - |
+      if kubectl get secret yandex-registry -n "${NAMESPACE_production}" >/dev/null 2>&1; then
+        echo "Secret 'yandex-registry' already exist. Skipping step."
+      else
+        kubectl create secret docker-registry yandex-registry -n "${NAMESPACE_production}" \
+          --docker-server="${CI_REGISTRY}/${CI_REGISTRY_ID}" \
+          --docker-username="${CI_REGISTRY_USER}" \
+          --docker-password="${CI_REGISTRY_PASSWORD}"
+        echo "Registry has been installed."
+      fi      
