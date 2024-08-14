@@ -4,7 +4,7 @@ metadata:
   name: resource-quota
 spec:
   hard:
-    requests.cpu: "300m"        
-    requests.memory: "300Mi"   
-    limits.cpu: "400m"          
-    limits.memory: "500Mi" 
+    requests.cpu: "700m"        
+    requests.memory: "800Mi"   
+    limits.cpu: "900m"          
+    limits.memory: "900Mi" 
