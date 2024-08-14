@@ -40,46 +40,52 @@ install_grafana_ingress:
   stage: install ingress
   extends: .prepare_kubectl
   script:
-    - kubectl apply -f manifests/
+    - kubectl apply -f manifests/ingress-grafana.yml
 
 prepare_namespace:dev:
   stage: prepare namespace
   extends: .prepare_kubectl
+  variables:
+    NAMESPACE: dev
   script:
     - |
-      if ! kubectl get ns "${NAMESPACE_development}" > /dev/null 2>&1; then
-          kubectl create ns "${NAMESPACE_development}"
+      if ! kubectl get ns "${NAMESPACE}" > /dev/null 2>&1; then
+          kubectl create ns "${NAMESPACE}"
         else
-          echo "Namespace ${NAMESPACE_development} already exists, skipping creation."
+          echo "Namespace ${NAMESPACE} already exists, skipping creation."
         fi
     - |
-      if kubectl get secret yandex-registry -n "${NAMESPACE_development}" >/dev/null 2>&1; then
+      if kubectl get secret yandex-registry -n "${NAMESPACE}" >/dev/null 2>&1; then
         echo "Secret 'yandex-registry' already exist. Skipping step."
       else
-        kubectl create secret docker-registry yandex-registry -n "${NAMESPACE_development}" \
+        kubectl create secret docker-registry yandex-registry -n "${NAMESPACE}" \
           --docker-server="${CI_REGISTRY}/${CI_REGISTRY_ID}" \
           --docker-username="${CI_REGISTRY_USER}" \
           --docker-password="${CI_REGISTRY_PASSWORD}"
         echo "Registry has been installed."
       fi
+    - kubectl apply -f manifests/rq-namespace-$NAMESPACE.yaml -n $NAMESPACE
 
 prepare_namespace:prod:
   stage: prepare namespace
   extends: .prepare_kubectl
+  variables:
+    NAMESPACE: prod
   script:
     - |
-      if ! kubectl get ns "${NAMESPACE_production}" > /dev/null 2>&1; then
-          kubectl create ns "${NAMESPACE_production}"
+      if ! kubectl get ns "${NAMESPACE}" > /dev/null 2>&1; then
+          kubectl create ns "${NAMESPACE}"
         else
-          echo "Namespace ${NAMESPACE_production} already exists, skipping creation."
+          echo "Namespace ${NAMESPACE} already exists, skipping creation."
         fi
     - |
-      if kubectl get secret yandex-registry -n "${NAMESPACE_production}" >/dev/null 2>&1; then
+      if kubectl get secret yandex-registry -n "${NAMESPACE}" >/dev/null 2>&1; then
         echo "Secret 'yandex-registry' already exist. Skipping step."
       else
-        kubectl create secret docker-registry yandex-registry -n "${NAMESPACE_production}" \
+        kubectl create secret docker-registry yandex-registry -n "${NAMESPACE}" \
           --docker-server="${CI_REGISTRY}/${CI_REGISTRY_ID}" \
           --docker-username="${CI_REGISTRY_USER}" \
           --docker-password="${CI_REGISTRY_PASSWORD}"
         echo "Registry has been installed."
-      fi      
+      fi
+    - kubectl apply -f manifests/rq-namespace-$NAMESPACE.yaml -n $NAMESPACE
